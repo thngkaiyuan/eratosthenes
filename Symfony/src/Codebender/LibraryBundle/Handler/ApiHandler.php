@@ -34,14 +34,10 @@ class ApiHandler
         }
 
         //TODO handle the case of different .h filenames and folder names
-        if ($filename == "ArduinoRobot") {
-            $filename = "Robot_Control";
-        }
-        if ($filename == "ArduinoRobotMotorBoard") {
-            $filename = "Robot_Motor";
-        }
-        if ($filename == 'BlynkSimpleSerial' || $filename == 'BlynkSimpleCC3000') {
-            $filename = 'BlynkSimpleEthernet';
+        $reservedNames = ["ArduinoRobot" => "Robot_Control", "ArduinoRobotMotorBoard" => "Robot_Motor",
+                        "BlynkSimpleSerial" => "BlynkSimpleEthernet", "BlynkSimpleCC3000" => "BlynkSimpleEthernet"];
+        if (array_key_exists($filename, $reservedNames)) {
+            $filename = $reservedNames[$filename];
         }
 
         if ($this->hasBuiltIn($filename)) {
@@ -54,20 +50,19 @@ class ApiHandler
         } else {
             if (!$this->hasExternalLibrary($filename)) {
                 return ["success" => false, "message" => "No Library named " . $library . " found."];
-            } else {
-                $response = $this->fetchLibraryFiles($finder, $externalLibrariesPath . "/" . $filename . "/" . $version);
-                if (empty($response)) {
-                    return ['success' => false, 'message' => 'No files for Library named `' . $library . '` with version `' . $version . '` found.'];
-                }
+            }
+            $response = $this->fetchLibraryFiles($finder, $externalLibrariesPath . "/" . $filename . "/" . $version);
+            if (empty($response)) {
+                return ['success' => false, 'message' => 'No files for Library named `' . $library . '` with version `' . $version . '` found.'];
+            }
 
-                if ($renderView) {
-                    $examples = $this->fetchLibraryExamples($exampleFinder, $externalLibrariesPath . "/" . $filename);
+            if ($renderView) {
+                $examples = $this->fetchLibraryExamples($exampleFinder, $externalLibrariesPath . "/" . $filename);
 
-                    $externalLibrary = $this->entityManager->getRepository('CodebenderLibraryBundle:ExternalLibrary')
-                        ->findOneBy(array('machineName' => $filename));
-                    $filename = $externalLibrary->getMachineName();
-                    $meta = $externalLibrary->getLiraryMeta();
-                }
+                $externalLibrary = $this->entityManager->getRepository('CodebenderLibraryBundle:ExternalLibrary')
+                    ->findOneBy(array('machineName' => $filename));
+                $filename = $externalLibrary->getMachineName();
+                $meta = $externalLibrary->getLiraryMeta();
             }
         }
         if (!$renderView) {
