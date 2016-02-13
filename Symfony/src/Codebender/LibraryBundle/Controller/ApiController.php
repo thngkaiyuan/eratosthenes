@@ -112,6 +112,9 @@ class ApiController extends Controller
         ];
     }
 
+    /*
+     * Copied from DefaultController.php
+     */
     private function getLibariesListFromDir($path)
     {
 
@@ -136,6 +139,9 @@ class ApiController extends Controller
         return $libraries;
     }
 
+    /*
+     * Copied from DefaultController.php
+     */
     private function getExternalLibrariesList()
     {
         $entityManager = $this->getDoctrine()->getManager();
@@ -176,13 +182,14 @@ class ApiController extends Controller
 
                 $libraries[$libraryMachineName]['examples'][] = array('name' => $names['example_name']);
             }
-
-
         }
 
         return $libraries;
     }
 
+    /*
+     * Copied from DefaultController.php
+     */
     private function getExampleAndLibNameFromRelativePath($path, $filename)
     {
         $type = "";
@@ -199,8 +206,6 @@ class ApiController extends Controller
                 }
             }
             $tmp = strtok("/");
-
-
         }
         $exampleName = ($type == "" ? $filename : $type . ":" . $filename);
         return (array('library_name' => $libraryName, 'example_name' => $exampleName));
