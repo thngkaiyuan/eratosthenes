@@ -18,19 +18,13 @@ class ApiHandler
         $this->container = $containerInterface;
     }
 
-    public function getLibraryCode($library, $disabled, $renderView = false)
+    public function getLibraryCode($library, $version = null, $renderView = false)
     {
-        $builtinLibrariesPath = $this->container->getParameter('builtin_libraries') . "/";
-        $externalLibrariesPath = $this->container->getParameter('external_libraries') . "/";
+        $builtinLibrariesPath = $this->container->getParameter('builtin_libraries');
+        $externalLibrariesPath = $this->container->getParameter('external_libraries_new');
 
         $finder = new Finder();
         $exampleFinder = new Finder();
-
-        if ($disabled != 1) {
-            $getDisabled = false;
-        } else {
-            $getDisabled = true;
-        }
 
         $filename = $library;
 
@@ -50,9 +44,7 @@ class ApiHandler
             $filename = 'BlynkSimpleEthernet';
         }
 
-        $exists = json_decode($this->checkIfBuiltInExists($filename), true);
-
-        if ($exists["success"]) {
+        if ($this->hasBuiltIn($filename)) {
             $response = $this->fetchLibraryFiles($finder, $builtinLibrariesPath . "/libraries/" . $filename);
 
             if ($renderView) {
@@ -60,13 +52,12 @@ class ApiHandler
                 $meta = [];
             }
         } else {
-            $response = json_decode($this->checkIfExternalExists($filename, $getDisabled), true);
-            if (!$response['success']) {
-                return $response;
+            if (!$this->hasExternalLibrary($filename)) {
+                return ["success" => false, "message" => "No Library named " . $library . " found."];
             } else {
-                $response = $this->fetchLibraryFiles($finder, $externalLibrariesPath . "/" . $filename);
+                $response = $this->fetchLibraryFiles($finder, $externalLibrariesPath . "/" . $filename . "/" . $version);
                 if (empty($response)) {
-                    return ['success' => false, 'message' => 'No files for Library named ' . $library . ' found.'];
+                    return ['success' => false, 'message' => 'No files for Library named `' . $library . '` with version `' . $version . '` found.'];
                 }
 
                 if ($renderView) {
@@ -92,27 +83,18 @@ class ApiHandler
         ];
     }
 
-    public function checkIfBuiltInExists($library)
+    public function hasBuiltIn($library)
     {
         $arduino_library_files = $this->container->getParameter('builtin_libraries') . "/";
-        if (!is_dir($arduino_library_files . "/libraries/" . $library)) {
-            return json_encode(array("success" => false, "message" => "No Library named " . $library . " found."));
-        }
-
-        return json_encode(array("success" => true, "message" => "Library found"));
+        return is_dir($arduino_library_files . "/libraries/" . $library);
     }
 
-    public function checkIfExternalExists($library, $getDisabled = false)
+    public function hasExternalLibrary($library, $getDisabled = false)
     {
         $lib = $this->entityManager
                     ->getRepository('CodebenderLibraryBundle:ExternalLibrary')
                     ->findBy(array('machineName' => $library));
-
-        if (empty($lib) || (!$getDisabled && !$lib[0]->getActive())) {
-            return json_encode(array("success" => false, "message" => "No Library named " . $library . " found."));
-        }
-
-        return json_encode(array("success" => true, "message" => "Library found"));
+        return !(empty($lib) || (!$getDisabled && !$lib[0]->getActive()));
     }
 
     public function fetchLibraryFiles($finder, $directory, $getContent = true)
@@ -141,5 +123,21 @@ class ApiHandler
             }
         }
         return $response;
+    }
+
+    public function fetchLibraryExamples($finder, $directory)
+    {
+        if (is_dir($directory)) {
+            $finder->in($directory);
+            $finder->name('*.pde')->name('*.ino');
+
+            $response = array();
+            foreach ($finder as $file) {
+                $response[] = array("filename" => $file->getRelativePathname(), "content" => (!mb_check_encoding($file->getContents(), 'UTF-8')) ? mb_convert_encoding($file->getContents(), "UTF-8") : $file->getContents());
+            }
+
+            return $response;
+        }
+
     }
 }
