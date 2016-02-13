@@ -58,6 +58,9 @@ class ApiController extends Controller
     private function selectAction($content)
     {
         switch ($content["type"]) {
+            case 'fetch':
+                $handler = $this->get('codebender_library.apiHandler');
+                return $handler->getLibraryCode($content['library'], $content['version']);
             default:
                 return ['success' => false, 'message' => 'No valid action requested'];
         }
