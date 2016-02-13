@@ -1,6 +1,7 @@
 parameters:
 #    codebender_library.example.class: Codebender\LibraryBundle\Example
     codebender_library.handler.class: Codebender\LibraryBundle\Handler\DefaultHandler
+    codebender_library.apiHandler.class: Codebender\LibraryBundle\Handler\ApiHandler
 
 services:
 #    codebender_library.example:
@@ -12,3 +13,9 @@ services:
         arguments:
             entityManager: "@doctrine.orm.entity_manager"
             containerInterface: "@service_container"
+
+    codebender_library.apiHandler:
+            class:  %codebender_library.apiHandler.class%
+            arguments:
+                entityManager: "@doctrine.orm.entity_manager"
+                containerInterface: "@service_container"
