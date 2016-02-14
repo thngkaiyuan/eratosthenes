@@ -2,6 +2,8 @@
 
 namespace Codebender\LibraryBundle\Controller;
 
+use Codebender\LibraryBundle\Entity\Library;
+use Codebender\LibraryBundle\Entity\LibraryExample;
 use Codebender\LibraryBundle\Entity\Version;
 use Codebender\LibraryBundle\Handler\ApiHandler;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
@@ -59,6 +61,8 @@ class ApiController extends Controller
         switch ($content["type"]) {
             case "getExamples":
                 return $this->getLibraryExamples($content["library"], $content["version"]);
+            case "getExampleCode":
+                return $this->getExampleCode($content["library"], $content["example"], $content["version"]);
             default:
                 return ['success' => false, 'message' => 'No valid action requested'];
         }
@@ -184,7 +188,7 @@ class ApiController extends Controller
     }
 
     /**
-     * Get the requested version of the given library
+     * Get the requested version entity of the given library
      * @param $library
      * @param $version
      * @return array
@@ -216,5 +220,180 @@ class ApiController extends Controller
         }
 
         return ['success' => true, 'message' => 'Requested version found.', 'data' => $result[0]];
+    }
+
+    /**
+     * Get LibraryExample entity for the requested library example
+     * @param $library
+     * @param $version
+     * @param $example
+     * @return array
+     */
+    private function getExampleForExternalLibrary($library, $version, $example)
+    {
+        $hasVersion = $this->getVerionForLibrary($library, $version);
+
+        if (!$hasVersion['success']) {
+            return $hasVersion;
+        }
+
+        /* @var Version $versionMeta */
+        $versionMeta = $hasVersion['data'];
+
+        $examplenMeta = array_values(
+            array_filter(
+                $versionMeta->getLibraryExamples()->toArray(),
+                function ($exampleObject) use ($example) {
+                    /* @var LibraryExample $exampleObject */
+                    return $exampleObject->getName() === $example;
+                }
+            )
+        );
+
+        if (empty($examplenMeta)) {
+            return ['success' => false, 'data' => []];
+        }
+
+        return ['success' => true, 'data' => $examplenMeta];
+    }
+
+    /**
+     * @param $library
+     * @param $example
+     * @param $version
+     * @return mixed|string
+     */
+    private function getExampleCode($library, $example, $version)
+    {
+        $type = $this->getLibraryType($library);
+        if ($type['success'] !== true) {
+            return $type;
+        }
+
+        switch ($type['type']) {
+            case 'builtin':
+                $dir = $this->container->getParameter('builtin_libraries') . "/libraries/";
+                $example = $this->getExampleCodeFromDir($dir, $library, $example);
+                break;
+            case 'external':
+                $example = $this->getExternalExampleCode($library, $version, $example);
+                break;
+            case 'example':
+                $dir = $this->container->getParameter('builtin_libraries') . "/examples/";
+                $example = $this->getExampleCodeFromDir($dir, $library, $example);
+                break;
+        }
+
+        return $example;
+    }
+
+    private function getExternalExampleCode($library, $version, $example)
+    {
+        // TODO: use a default version if version is not given in the request
+        $hasExample = $this->getExampleForExternalLibrary($library, $version, $example);
+
+        $exampleMeta = $hasExample['data'];
+
+        if (count($exampleMeta) == 0) {
+            $example = str_replace(":", "/", $example);
+            $filename = pathinfo($example, PATHINFO_FILENAME);
+
+            $hasVersion = $this->getExampleForExternalLibrary($library, $version, $filename);
+            if (!$hasVersion['success']) {
+                return $hasVersion;
+            }
+
+            $exampleMeta = $hasVersion['data'];
+
+            if (count($exampleMeta) > 1) {
+                $meta = null;
+                foreach ($exampleMeta as $e) {
+                    $path = $e->getPath();
+                    if (!(strpos($path, $example) === false)) {
+                        $meta = $e;
+                        break;
+                    }
+                }
+                if (!$meta) {
+                    return ['success' => false];
+                }
+            } elseif (count($exampleMeta) == 0) {
+                return ['success' => false];
+            } else {
+                $meta = $exampleMeta[0];
+            }
+        } else {
+            $meta = $exampleMeta[0];
+        }
+
+        $externalLibraryPath = $this->container->getParameter('external_libraries_new');
+        $libraryFolder = $meta->getVersion()->getLibrary()->getFolderName();
+        $versionFolder = $meta->getVersion()->getFolderName();
+
+        $fullPath = $externalLibraryPath . '/' . $libraryFolder . '/' . $versionFolder . '/' . $meta->getPath();
+
+        $path = pathinfo($fullPath, PATHINFO_DIRNAME);
+        $files = $this->getExampleFilesFromDir($path);
+        return $files;
+    }
+
+    private function getExampleCodeFromDir($dir, $library, $example)
+    {
+        $finder = new Finder();
+        $finder->in($dir . $library);
+        $finder->name($example . ".ino", $example . ".pde");
+
+        if (iterator_count($finder) == 0) {
+            $example = str_replace(":", "/", $example);
+            $filename = pathinfo($example, PATHINFO_FILENAME);
+            $finder->name($filename . ".ino", $filename . ".pde");
+            if (iterator_count($finder) > 1) {
+                $filesPath = null;
+                foreach ($finder as $e) {
+                    $path = $e->getPath();
+                    if (!(strpos($path, $example) === false)) {
+                        $filesPath = $e;
+                        break;
+                    }
+                }
+                if (!$filesPath) {
+                    return ['success' => false];
+                }
+            } elseif (iterator_count($finder) == 0) {
+                return ['success' => false];
+            } else {
+                $filesPathIterator = iterator_to_array($finder, false);
+                $filesPath = $filesPathIterator[0]->getPath();
+            }
+        } else {
+            $filesPathIterator = iterator_to_array($finder, false);
+            $filesPath = $filesPathIterator[0]->getPath();
+        }
+        $files = $this->getExampleFilesFromDir($filesPath);
+        return $files;
+    }
+
+    private function getExampleFilesFromDir($dir)
+    {
+        $filesFinder = new Finder();
+        $filesFinder->in($dir);
+        $filesFinder->name('*.cpp')->name('*.h')->name('*.c')->name('*.S')->name('*.pde')->name('*.ino');
+
+        $files = array();
+        foreach ($filesFinder as $file) {
+            if ($file->getExtension() == "pde") {
+                $name = $file->getBasename("pde") . "ino";
+            } else {
+                $name = $file->getFilename();
+            }
+
+            $files[] = array(
+                "filename" => $name,
+                "code" => (!mb_check_encoding($file->getContents(), 'UTF-8')) ? mb_convert_encoding($file->getContents(), "UTF-8") : $file->getContents()
+            );
+
+        }
+
+        return ['success' => true, "files" => $files];
     }
 }
