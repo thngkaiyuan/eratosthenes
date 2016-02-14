@@ -58,6 +58,9 @@ class ApiController extends Controller
     private function selectAction($content)
     {
         switch ($content["type"]) {
+            case "checkGithubUpdates":
+                $handler = $this->get('codebender_library.apiHandler');
+                return $handler->checkGithubUpdates();
             default:
                 return ['success' => false, 'message' => 'No valid action requested'];
         }
