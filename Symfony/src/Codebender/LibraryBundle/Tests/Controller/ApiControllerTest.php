@@ -32,6 +32,39 @@ class ApiControllerTest extends WebTestCase
         $this->assertArrayHasKey('multi_ino_example', $response['examples']);
     }
 
+    public function testGetExampleCode()
+    {
+        $client = static::createClient();
+
+        $authorizationKey = $client->getContainer()->getParameter('authorizationKey');
+
+        // Get first example
+        $client = $this->postApiRequest(
+            $client,
+            $authorizationKey,
+            '{"type":"getExampleCode","library":"SubCateg", "version": "1.0.0", "example":"subcateg_example_one"}'
+        );
+
+        $response = json_decode($client->getResponse()->getContent(), true);
+
+        $this->assertTrue($response['success']);
+        $this->assertEquals('subcateg_example_one.ino', $response['files'][0]['filename']);
+        $this->assertContains('void setup()', $response['files'][0]['code']);
+
+        // Get second example
+        $client = $this->postApiRequest(
+            $client,
+            $authorizationKey,
+            '{"type":"getExampleCode","library":"SubCateg", "version": "1.0.0", "example":"experienceBased:Beginners:subcateg_example_two"}'
+        );
+
+        $response = json_decode($client->getResponse()->getContent(), true);
+
+        $this->assertTrue($response['success']);
+        $this->assertEquals('subcateg_example_two.ino', $response['files'][0]['filename']);
+        $this->assertContains('void setup()', $response['files'][0]['code']);
+    }
+
     /**
      * Use this method for library manager API requests with POST data
      *
