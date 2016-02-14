@@ -63,7 +63,7 @@ class ApiControllerTest extends WebTestCase
     {
         $client->request(
             'POST',
-            '/' . $authKey . '/v1',
+            '/' . $authKey . '/v2',
             [],
             [],
             [],
