@@ -58,6 +58,10 @@ class ApiController extends Controller
     private function selectAction($content)
     {
         switch ($content["type"]) {
+            case "getKeywords":
+                $handler = $this->get('codebender_library.apiHandler');
+                $handler->checkAndSetDefaultGetKeywordsParameters($content);
+                return $handler->getKeywordsResponse($content["library"], $content["version"]);
             case "getVersions":
                 $handler = $this->get('codebender_library.apiHandler');
                 return $handler->getVersionsResponse($content["library"]);
