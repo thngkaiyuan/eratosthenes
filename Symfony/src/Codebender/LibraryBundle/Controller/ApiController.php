@@ -58,6 +58,9 @@ class ApiController extends Controller
     private function selectAction($content)
     {
         switch ($content["type"]) {
+            case "getVersions":
+                $handler = $this->get('codebender_library.apiHandler');
+                return $handler->getVersionsResponse($content["library"]);
             default:
                 return ['success' => false, 'message' => 'No valid action requested'];
         }
@@ -69,7 +72,7 @@ class ApiController extends Controller
             return false;
         }
 
-        if (in_array($requestContent["type"], array("getExampleCode", "getExamples", "fetch", "getKeywords")) &&
+        if (in_array($requestContent["type"], array("getExampleCode", "getExamples", "fetch", "getKeywords", "getVersions")) &&
             !array_key_exists("library", $requestContent)
         ) {
             return false;
