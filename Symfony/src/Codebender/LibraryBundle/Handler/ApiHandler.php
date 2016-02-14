@@ -227,4 +227,28 @@ class ApiHandler
 
         return $jsonDecodedContent;
     }
+
+    /**
+     * This method toggles the active status of a library.
+     *
+     * @param $defaultHeader
+     */
+    public function toggleLibraryStatus($defaultHeader)
+    {
+        $entityManager = $this->entityManager;
+        $library = $entityManager
+            ->getRepository('CodebenderLibraryBundle:Library')
+            ->findBy(array('default_header' => $defaultHeader));
+
+        // Do nothing if the library does not exist
+        if (count($library) < 1) {
+            return;
+        }
+
+        $library = $library[0];
+        $currentStatus = $library->getActive();
+        $library->setActive(!$currentStatus);
+        $entityManager->persist($library);
+        $entityManager->flush();
+    }
 }
