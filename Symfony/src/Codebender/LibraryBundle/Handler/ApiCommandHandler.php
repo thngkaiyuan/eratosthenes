@@ -4,6 +4,7 @@ namespace Codebender\LibraryBundle\Handler;
 
 use Doctrine\ORM\EntityManager;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Codebender\LibraryBundle\Handler\ApiCommand\InvalidApiCommand;
 use Codebender\LibraryBundle\Handler\ApiCommand\FetchApiCommand;
 
 class ApiCommandHandler
@@ -22,10 +23,11 @@ class ApiCommandHandler
     {
         $class = 'Codebender\\LibraryBundle\\Handler\\ApiCommand\\' . ucfirst($content['type']) . 'ApiCommand';
         if (!class_exists($class)) {
-            
+            $command = new InvalidApiCommand($this->entityManager, $this->container);
+        } else {
+            $command = new $class($this->entityManager, $this->container);
+            $command->inject($content);
         }
-        $command = new $class($this->entityManager, $this->container);
-        $command->inject($content);
         return $command;
     }
 }
