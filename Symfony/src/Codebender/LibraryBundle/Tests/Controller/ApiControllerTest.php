@@ -36,6 +36,40 @@ class ApiControllerTest extends WebTestCase
     }
 
     /**
+     * Test for failure cases for getExamples API
+     */
+    public function testGetInvalidExternalLibraryExamples()
+    {
+        $client = static::createClient();
+
+        $authorizationKey = $client->getContainer()->getParameter('authorizationKey');
+
+        // Invalid library name
+        $client = $this->postApiRequest(
+            $client,
+            $authorizationKey,
+            '{"type":"getExamples", "version" : "1.0.0", "library" : "NoSuchLib"}'
+        );
+
+        $response = json_decode($client->getResponse()->getContent(), true);
+
+        $this->assertFalse($response['success']);
+        $this->assertEquals('Requested library named NoSuchLib not found.', $response['message']);
+
+        // Invalid library version
+        $client = $this->postApiRequest(
+            $client,
+            $authorizationKey,
+            '{"type":"getExamples", "version" : "9.9.9", "library" : "MultiIno"}'
+        );
+
+        $response = json_decode($client->getResponse()->getContent(), true);
+
+        $this->assertFalse($response['success']);
+        $this->assertEquals('Requested version for library MultiIno not found.', $response['message']);
+    }
+
+    /**
      * Test for the getExampleCode API
      */
     public function testGetExampleCode()
