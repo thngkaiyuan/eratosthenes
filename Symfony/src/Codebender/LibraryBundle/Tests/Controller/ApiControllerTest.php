@@ -13,6 +13,57 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 class ApiControllerTest extends WebTestCase
 {
+    public function testInvalidRequest()
+    {
+        $client = static::createClient();
+
+        $authorizationKey = $client->getContainer()->getParameter('authorizationKey');
+
+        // Wrong data
+        $client = $this->postApiRequest(
+            $client,
+            $authorizationKey,
+            ''
+        );
+
+        $response = json_decode($client->getResponse()->getContent(), true);
+        $this->assertFalse($response['success']);
+        $this->assertEquals('Wrong data', $response['message']);
+
+        // Incorrect request fields : no type
+        $client = $this->postApiRequest(
+            $client,
+            $authorizationKey,
+            '{}'
+        );
+
+        $response = json_decode($client->getResponse()->getContent(), true);
+        $this->assertFalse($response['success']);
+        $this->assertEquals('Incorrect request fields', $response['message']);
+
+        // Incorrect request fields : getExampleCode without specific example
+        $client = $this->postApiRequest(
+            $client,
+            $authorizationKey,
+            '{"type":"getExampleCode","library":"default", "version": "1.0.0"}'
+        );
+
+        $response = json_decode($client->getResponse()->getContent(), true);
+        $this->assertFalse($response['success']);
+        $this->assertEquals('Incorrect request fields', $response['message']);
+
+        // Invalid action
+        $client = $this->postApiRequest(
+            $client,
+            $authorizationKey,
+            '{"type" : "noSuchType"}'
+        );
+
+        $response = json_decode($client->getResponse()->getContent(), true);
+        $this->assertFalse($response['success']);
+        $this->assertEquals('No valid action requested', $response['message']);
+    }
+
     /**
      * Test for the getExamples API
      */
