@@ -6,7 +6,7 @@ use Doctrine\ORM\EntityManager;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Finder\Finder;
 
-class ListApiCommand extends AbstractApiCommand
+class FetchApiCommand extends AbstractApiCommand
 {
     protected $library;
     protected $version;
