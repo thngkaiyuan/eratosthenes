@@ -5,7 +5,6 @@ namespace Codebender\LibraryBundle\Handler;
 use Doctrine\ORM\EntityManager;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Codebender\LibraryBundle\Handler\ApiCommand\InvalidApiCommand;
-use Codebender\LibraryBundle\Handler\ApiCommand\FetchApiCommand;
 
 class ApiCommandHandler
 {

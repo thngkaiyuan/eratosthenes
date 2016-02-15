@@ -7,7 +7,22 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 class ApiControllerTest extends WebTestCase
 {
-    public function testFetchLibrary()
+    public function testInvalidApiCommand()
+    {
+        $client = static::createClient();
+
+        $authorizationKey = $client->getContainer()->getParameter('authorizationKey');
+
+        $client = $this->postApiRequest($client, $authorizationKey, '{"type":"fetcher","library":"default","version":"1.1.0"}');
+
+        $response = json_decode($client->getResponse()->getContent(), true);
+
+        $this->assertFalse($response['success']);
+        $this->assertEquals('No valid action requested', $response['message']);
+
+    }
+
+    public function testFetchApiCommand()
     {
         $client = static::createClient();
 
