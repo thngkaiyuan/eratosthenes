@@ -25,8 +25,9 @@ class FetchApiCommand extends AbstractApiCommand
         $this->apiHandler = $this->container->get('codebender_library.apiHandler');
 
         //TODO handle the case of different .h filenames and folder names
-        $reservedNames = ["ArduinoRobot" => "Robot_Control", "ArduinoRobotMotorBoard" => "Robot_Motor",
+        $RESERVED_NAMES = ["ArduinoRobot" => "Robot_Control", "ArduinoRobotMotorBoard" => "Robot_Motor",
             "BlynkSimpleSerial" => "BlynkSimpleEthernet", "BlynkSimpleCC3000" => "BlynkSimpleEthernet"];
+
         if (array_key_exists($content['library'], $reservedNames)) {
             $content['library'] = $reservedNames[$content['library']];
         }
