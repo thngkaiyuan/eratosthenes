@@ -368,6 +368,15 @@ class ApiHandler
         return strtotime($dateString);
     }
 
+    public function isAuthenticatedPartner($auth_key)
+    {
+        /* @var Partner $partner */
+        $partner = $this->entityManager
+            ->getRepository('CodebenderLibraryBundle:Partner')
+            ->findOneBy(array('auth_key' => $auth_key));
+        return $partner !== null;
+    }
+
     /**
      * Create a new default version Preference for the partner
      * Assume no Preference has been created for this library
